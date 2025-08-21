@@ -70,19 +70,29 @@ export async function addPlayer(tableId: string, playerName: string, initialChip
 // Rejoin a table using a session ID
 export async function rejoinWithSession(sessionId: string) {
   try {
-    // Find the session
+    console.log("Trying to rejoin with sessionId:", sessionId);
+    
+    // Find the session first
     const { data: session, error: sessionError } = await supabase
       .from('sessions')
-      .select(`
-        *,
-        players (*)
-      `)
+      .select('*')
       .eq('id', sessionId)
       .single();
+
+    console.log("Session lookup result:", { session, sessionError });
 
     if (sessionError || !session) {
       throw new Error('Invalid session');
     }
+
+    // Now get the player separately
+    const { data: player, error: playerError } = await supabase
+      .from('players')
+      .select('*')
+      .eq('id', session.player_id)
+      .single();
+
+    console.log("Player lookup result:", { player, playerError });
 
     // Update player status
     const { error: updateError } = await supabase
@@ -102,7 +112,7 @@ export async function rejoinWithSession(sessionId: string) {
       .eq('id', sessionId);
 
     return {
-      player: session.players,
+      player: player,
       sessionId: session.id,
       tableId: session.table_id
     };
@@ -120,7 +130,7 @@ export async function getPlayersByTable(tableId: string) {
       .select('*')
       .eq('table_id', tableId)
       .eq('is_active', true)
-      .order('created_at', { ascending: true });
+      .order('last_seen', { ascending: true });
 
     if (error) throw error;
     return data || [];

@@ -7,6 +7,8 @@ import {
   updatePlayerChips,
   touchSession
 } from '../services/playerService.js';
+import { SupabaseClient } from '@supabase/supabase-js';
+import { supabase } from '../config/supabaseClient.js';
 
 const router = Router();
 
@@ -115,6 +117,16 @@ router.post('/sessions/:sessionId/heartbeat', async (req, res) => {
 router.use((req, res, next) => {
   console.log(`PlayerRoutes received: ${req.method} ${req.path}`);
   next();
+});
+
+router.get('/sessions/debug', async (req, res) => {
+  const { data, error } = await supabase
+    .from('sessions')
+    .select('*')
+    .order('id', { ascending: false })
+    .limit(5);
+  
+  res.json({ sessions: data, error });
 });
 
 export default router;
