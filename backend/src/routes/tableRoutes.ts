@@ -10,13 +10,13 @@ router.post("/", async (req, res) => {
     const table = await createTable(name);
     res.status(201).json(table);
   } catch (err: unknown) {
-  if (err instanceof Error) {
-    res.status(500).json({ message: err.message });
-  } else {
-    res.status(500).json({ message: "Unknown error" });
+    console.error("Actual error:", err);  // ADD THIS LINE
+    if (err instanceof Error) {
+      res.status(500).json({ message: err.message });
+    } else {
+      res.status(500).json({ message: "Unknown error" });
+    }
   }
-}
-
 });
 
 router.get("/:id", async (req, res) => {
