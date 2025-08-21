@@ -112,4 +112,9 @@ router.post('/sessions/:sessionId/heartbeat', async (req, res) => {
   }
 });
 
+router.use((req, res, next) => {
+  console.log(`PlayerRoutes received: ${req.method} ${req.path}`);
+  next();
+});
+
 export default router;
