@@ -3,10 +3,11 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-console.log("Supabase URL:", process.env.SUPABASE_URL);
-console.log("Has Anon Key:", !!process.env.SUPABASE_ANON_KEY);
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
 
-export const supabase = createClient(
-  process.env.SUPABASE_URL as string,
-  process.env.SUPABASE_ANON_KEY as string
-);
+if (!supabaseUrl || !supabaseAnonKey) {
+  throw new Error("Missing Supabase environment variables");
+}
+
+export const supabase = createClient(supabaseUrl, supabaseAnonKey);

@@ -5,25 +5,18 @@ import {
   rejoinWithSession,
   setPlayerInactive,
   updatePlayerChips,
-  touchSession
+  touchSession,
+  getPlayerById
 } from '../services/playerService.js';
-import { SupabaseClient } from '@supabase/supabase-js';
-import { supabase } from '../config/supabaseClient.js';
+import { logActivity } from '../services/activityService.js';
 
 const router = Router();
 
-//Test route
-router.get('/player-test', (req, res) => {
-  res.json({ message: 'Player routes are loaded!' });
-});
-
-// Join a table (create new player)
+// Join a table
 router.post('/tables/:tableId/players', async (req, res) => {
-  console.log("Hit POST /tables/:tableId/players");
-  console.log("Body:", req.body);
   try {
     const { tableId } = req.params;
-    const { name, initialChips } = req.body;
+    const { name, initialChips = 1000 } = req.body;
 
     if (!name) {
       return res.status(400).json({ error: 'Player name is required' });
@@ -31,18 +24,37 @@ router.post('/tables/:tableId/players', async (req, res) => {
 
     const result = await addPlayer(tableId, name, initialChips);
     
+    // Log activity
+    await logActivity({
+      table_id: tableId,
+      player_id: result.player.id,
+      action_type: 'joined'
+    });
+    
     res.status(201).json({
       message: 'Player joined successfully',
       player: result.player,
       sessionId: result.sessionId
     });
-  } catch (error) {
-    console.error('Error in POST /tables/:tableId/players:', error);
-    res.status(500).json({ error: 'Failed to add player' });
+  } catch (error: any) {
+    console.error('Error joining table:', error);
+    res.status(500).json({ error: error.message || 'Failed to join table' });
   }
 });
 
-// Rejoin with session ID
+// Get active players
+router.get('/tables/:tableId/players', async (req, res) => {
+  try {
+    const { tableId } = req.params;
+    const players = await getPlayersByTable(tableId);
+    res.json(players);
+  } catch (error: any) {
+    console.error('Error fetching players:', error);
+    res.status(500).json({ error: 'Failed to fetch players' });
+  }
+});
+
+// Rejoin with session
 router.post('/sessions/:sessionId/rejoin', async (req, res) => {
   try {
     const { sessionId } = req.params;
@@ -54,32 +66,35 @@ router.post('/sessions/:sessionId/rejoin', async (req, res) => {
       sessionId: result.sessionId,
       tableId: result.tableId
     });
-  } catch (error) {
-    console.error('Error in POST /sessions/:sessionId/rejoin:', error);
-    res.status(404).json({ error: 'Session not found or expired' });
+  } catch (error: any) {
+    console.error('Error rejoining:', error);
+    res.status(404).json({ error: error.message || 'Session not found' });
   }
 });
 
-// Get active players at a table
-router.get('/tables/:tableId/players', async (req, res) => {
-  try {
-    const { tableId } = req.params;
-    const players = await getPlayersByTable(tableId);
-    res.json(players);
-  } catch (error) {
-    console.error('Error in GET /tables/:tableId/players:', error);
-    res.status(500).json({ error: 'Failed to fetch players' });
-  }
-});
-
-// Leave table (mark inactive)
+// Leave table
 router.post('/players/:playerId/leave', async (req, res) => {
   try {
     const { playerId } = req.params;
+    
+    // Get player info for logging
+    const player = await getPlayerById(playerId);
+    if (!player) {
+      return res.status(404).json({ error: 'Player not found' });
+    }
+    
     await setPlayerInactive(playerId);
+    
+    // Log activity
+    await logActivity({
+      table_id: player.table_id,
+      player_id: playerId,
+      action_type: 'left'
+    });
+    
     res.json({ message: 'Player left the table' });
-  } catch (error) {
-    console.error('Error in POST /players/:playerId/leave:', error);
+  } catch (error: any) {
+    console.error('Error leaving table:', error);
     res.status(500).json({ error: 'Failed to leave table' });
   }
 });
@@ -96,37 +111,22 @@ router.patch('/players/:playerId/chips', async (req, res) => {
 
     const player = await updatePlayerChips(playerId, amount);
     res.json(player);
-  } catch (error) {
-    console.error('Error in PATCH /players/:playerId/chips:', error);
+  } catch (error: any) {
+    console.error('Error updating chips:', error);
     res.status(500).json({ error: 'Failed to update chips' });
   }
 });
 
-// Keep session alive (heartbeat)
+// Heartbeat
 router.post('/sessions/:sessionId/heartbeat', async (req, res) => {
   try {
     const { sessionId } = req.params;
     await touchSession(sessionId);
     res.json({ message: 'Session updated' });
-  } catch (error) {
-    console.error('Error in POST /sessions/:sessionId/heartbeat:', error);
+  } catch (error: any) {
+    console.error('Error updating session:', error);
     res.status(500).json({ error: 'Failed to update session' });
   }
-});
-
-router.use((req, res, next) => {
-  console.log(`PlayerRoutes received: ${req.method} ${req.path}`);
-  next();
-});
-
-router.get('/sessions/debug', async (req, res) => {
-  const { data, error } = await supabase
-    .from('sessions')
-    .select('*')
-    .order('id', { ascending: false })
-    .limit(5);
-  
-  res.json({ sessions: data, error });
 });
 
 export default router;
