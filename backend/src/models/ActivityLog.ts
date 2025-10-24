@@ -1,4 +1,3 @@
-// src/models/ActivityLog.ts
 export interface ActivityLog {
   id: number;
   table_id: string;
