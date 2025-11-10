@@ -50,6 +50,8 @@ export async function updatePot(tableId: string, amount: number): Promise<Table>
   return data;
 }
 
+
+
 export async function addToPot(tableId: string, amount: number): Promise<Table> {
   const table = await getTableById(tableId);
   if (!table) throw new Error('Table not found');
@@ -73,4 +75,5 @@ export async function takeFromPot(tableId: string, amount: number): Promise<Tabl
 export async function resetPot(tableId: string): Promise<Table> {
   return updatePot(tableId, 0);
 }
+
 

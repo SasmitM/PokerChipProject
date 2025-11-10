@@ -7,6 +7,12 @@ import {
 } from '../services/tableService.js';
 import { updatePlayerChips, getPlayerById } from '../services/playerService.js';
 import { logActivity, getTableActivities } from '../services/activityService.js';
+import { 
+  emitBetPlaced, 
+  emitChipsTaken, 
+  emitPotReset, 
+  emitChipsUpdated 
+} from '../services/socketService.js';
 
 const router = Router();
 
@@ -41,6 +47,14 @@ router.post('/tables/:tableId/bet', async (req, res) => {
       player_id: playerId,
       action_type: 'bet',
       amount
+    });
+
+    emitBetPlaced(tableId, {
+      playerId,
+      playerName: player.name,
+      amount,
+      newPot: table.current_pot,
+      playerChips: player.money_count - amount
     });
 
     res.json({
@@ -83,6 +97,14 @@ router.post('/tables/:tableId/take', async (req, res) => {
       amount
     });
 
+    emitChipsTaken(tableId, {
+      playerId,
+      playerName: player.name,
+      amount,
+      newPot: table.current_pot,
+      playerChips: player.money_count + amount
+    });
+
     res.json({
       message: 'Took from pot successfully',
       newPot: table.current_pot,
@@ -121,6 +143,12 @@ router.post('/tables/:tableId/reset-pot', async (req, res) => {
       action_type: 'reset_pot'
     });
 
+    const player = await getPlayerById(playerId);
+    emitPotReset(tableId, {
+      playerId,
+      playerName: player?.name || 'Unknown'
+    });
+
     res.json({
       message: 'Pot reset successfully',
       newPot: 0
@@ -150,6 +178,9 @@ router.patch('/tables/:tableId/admin/player/:targetPlayerId/chips', async (req, 
       return res.status(403).json({ error: 'Only table creator can edit chips' });
     }
 
+    const admin = await getPlayerById(adminPlayerId);
+    const target = await getPlayerById(targetPlayerId);
+
     const updatedPlayer = await updatePlayerChips(targetPlayerId, amount);
 
     await logActivity({
@@ -157,6 +188,13 @@ router.patch('/tables/:tableId/admin/player/:targetPlayerId/chips', async (req, 
       player_id: adminPlayerId,
       action_type: 'chips_edited',
       amount
+    });
+
+    emitChipsUpdated(tableId, {
+      playerId: targetPlayerId,
+      playerName: target?.name || 'Unknown',
+      newAmount: amount,
+      adminName: admin?.name || 'Admin'
     });
 
     res.json({
