@@ -10,7 +10,7 @@ interface PlayerListProps {
   onEditChips: (playerId: string, amount: number) => void;
 }
 
-export default function PlayerList({ players, currentPlayerId, isAdmin, tableId, adminPlayerId, onEditChips }: PlayerListProps) {
+export default function PlayerList({ players, currentPlayerId, isAdmin, onEditChips }: PlayerListProps) {
   const [editingPlayer, setEditingPlayer] = useState<string | null>(null);
   const [editAmount, setEditAmount] = useState('');
 

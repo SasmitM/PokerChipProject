@@ -1,13 +1,7 @@
 import { useState, useEffect } from 'react';
 import LandingPage from './components/LandingPage';
 import GameTable from './components/GameTable';
-import { Player, Table } from './services/api';
-
-export interface GameState {
-  table: Table;
-  player: Player;
-  sessionId: string;
-}
+import { GameState } from './services/api';
 
 function App() {
   const [gameState, setGameState] = useState<GameState | null>(null);

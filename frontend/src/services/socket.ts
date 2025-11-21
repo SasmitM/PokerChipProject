@@ -1,6 +1,7 @@
 import { io, Socket } from 'socket.io-client';
 
-const SOCKET_URL = 'http://localhost:4000';
+// Use environment variable for socket URL, fallback to localhost for dev
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:4000';
 
 export interface SocketEvents {
   'join-table': (data: { tableId: string; playerId: string }) => void;
