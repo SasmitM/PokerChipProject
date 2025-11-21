@@ -1,11 +1,6 @@
 // Use environment variable for API base URL, fallback to proxy for dev
 const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api';
 
-// Log API base for debugging
-console.log('API Base URL:', API_BASE);
-console.log('Environment:', import.meta.env.MODE);
-console.log('VITE_API_BASE_URL:', import.meta.env.VITE_API_BASE_URL);
-
 export interface Table {
   id: string;
   name: string;
@@ -64,7 +59,7 @@ async function parseError(res: Response, url: string): Promise<string> {
   
   // Handle network/CORS errors
   if (res.status === 0) {
-    return `Network error: Cannot connect to ${url}. This might be a CORS issue or the server is down. Check that your backend is running and accessible.`;
+    return `Network error: Cannot connect to ${url}. Check that your backend is running and accessible.`;
   }
   
   if (contentType && contentType.includes('application/json')) {
@@ -86,56 +81,25 @@ async function parseError(res: Response, url: string): Promise<string> {
   }
 }
 
-// Helper to get headers with ngrok bypass if needed
-function getHeaders(includeContentType: boolean = true): HeadersInit {
-  const headers: HeadersInit = {};
-  if (includeContentType) {
-    (headers as any)['Content-Type'] = 'application/json';
-  }
-  // Add ngrok bypass header for free tier (value can be 'any' or 'true')
-  if (API_BASE.includes('ngrok-free.app')) {
-    (headers as any)['ngrok-skip-browser-warning'] = 'any';
-  }
-  return headers;
-}
 
 // Table API
 export const tableApi = {
   create: async (tableName: string, playerName: string, initialChips: number = 1000): Promise<CreateTableResponse> => {
     const url = `${API_BASE}/tables`;
-    console.log('Creating table at:', url);
-    try {
-      const res = await fetch(url, {
-        method: 'POST',
-        headers: getHeaders(),
-        body: JSON.stringify({ tableName, playerName, initialChips }),
-      });
-      if (!res.ok) {
-        const errorMsg = await parseError(res, url);
-        throw new Error(errorMsg);
-      }
-      return res.json();
-    } catch (error: any) {
-      // Handle network errors (CORS, connection refused, etc.)
-      if (error.name === 'TypeError' && error.message.includes('fetch')) {
-        throw new Error(
-          `Network error: Cannot connect to ${url}. ` +
-          `This might be because:\n` +
-          `1. Your backend is not running\n` +
-          `2. ngrok is not running or URL changed\n` +
-          `3. ngrok browser warning page is blocking requests (free tier) - try visiting ${url.replace('/api/tables', '/api/health')} in your browser first\n` +
-          `4. CORS issue - check backend CORS settings`
-        );
-      }
-      throw error;
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tableName, playerName, initialChips }),
+    });
+    if (!res.ok) {
+      const errorMsg = await parseError(res, url);
+      throw new Error(errorMsg);
     }
+    return res.json();
   },
 
   getById: async (tableId: string): Promise<Table> => {
-    const url = `${API_BASE}/tables/${tableId}`;
-    const res = await fetch(url, {
-      headers: getHeaders(false),
-    });
+    const res = await fetch(`${API_BASE}/tables/${tableId}`);
     if (!res.ok) throw new Error('Table not found');
     return res.json();
   },
@@ -145,39 +109,20 @@ export const tableApi = {
 export const playerApi = {
   join: async (tableId: string, name: string, initialChips: number = 1000): Promise<JoinTableResponse> => {
     const url = `${API_BASE}/tables/${tableId}/players`;
-    console.log('Joining table at:', url);
-    try {
-      const res = await fetch(url, {
-        method: 'POST',
-        headers: getHeaders(),
-        body: JSON.stringify({ name, initialChips }),
-      });
-      if (!res.ok) {
-        const errorMsg = await parseError(res, url);
-        throw new Error(errorMsg);
-      }
-      return res.json();
-    } catch (error: any) {
-      // Handle network errors (CORS, connection refused, etc.)
-      if (error.name === 'TypeError' && error.message.includes('fetch')) {
-        throw new Error(
-          `Network error: Cannot connect to ${url}. ` +
-          `This might be because:\n` +
-          `1. Your backend is not running\n` +
-          `2. ngrok is not running or URL changed\n` +
-          `3. ngrok browser warning page is blocking requests (free tier) - try visiting ${API_BASE.replace('/api', '/api/health')} in your browser first\n` +
-          `4. CORS issue - check backend CORS settings`
-        );
-      }
-      throw error;
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, initialChips }),
+    });
+    if (!res.ok) {
+      const errorMsg = await parseError(res, url);
+      throw new Error(errorMsg);
     }
+    return res.json();
   },
 
   getByTable: async (tableId: string): Promise<Player[]> => {
-    const url = `${API_BASE}/tables/${tableId}/players`;
-    const res = await fetch(url, {
-      headers: getHeaders(false),
-    });
+    const res = await fetch(`${API_BASE}/tables/${tableId}/players`);
     if (!res.ok) throw new Error('Failed to fetch players');
     return res.json();
   },
@@ -186,7 +131,6 @@ export const playerApi = {
     const url = `${API_BASE}/sessions/${sessionId}/rejoin`;
     const res = await fetch(url, {
       method: 'POST',
-      headers: getHeaders(false),
     });
     if (!res.ok) {
       const errorMsg = await parseError(res, url);
@@ -196,19 +140,16 @@ export const playerApi = {
   },
 
   leave: async (playerId: string): Promise<void> => {
-    const url = `${API_BASE}/players/${playerId}/leave`;
-    const res = await fetch(url, {
+    const res = await fetch(`${API_BASE}/players/${playerId}/leave`, {
       method: 'POST',
-      headers: getHeaders(false),
     });
     if (!res.ok) throw new Error('Failed to leave');
   },
 
   updateChips: async (playerId: string, amount: number): Promise<Player> => {
-    const url = `${API_BASE}/players/${playerId}/chips`;
-    const res = await fetch(url, {
+    const res = await fetch(`${API_BASE}/players/${playerId}/chips`, {
       method: 'PATCH',
-      headers: getHeaders(),
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ amount }),
     });
     if (!res.ok) throw new Error('Failed to update chips');
@@ -216,10 +157,8 @@ export const playerApi = {
   },
 
   heartbeat: async (sessionId: string): Promise<void> => {
-    const url = `${API_BASE}/sessions/${sessionId}/heartbeat`;
-    await fetch(url, {
+    await fetch(`${API_BASE}/sessions/${sessionId}/heartbeat`, {
       method: 'POST',
-      headers: getHeaders(false),
     });
   },
 };
@@ -227,10 +166,9 @@ export const playerApi = {
 // Game API
 export const gameApi = {
   bet: async (tableId: string, playerId: string, amount: number) => {
-    const url = `${API_BASE}/tables/${tableId}/bet`;
-    const res = await fetch(url, {
+    const res = await fetch(`${API_BASE}/tables/${tableId}/bet`, {
       method: 'POST',
-      headers: getHeaders(),
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ playerId, amount }),
     });
     if (!res.ok) {
@@ -241,10 +179,9 @@ export const gameApi = {
   },
 
   take: async (tableId: string, playerId: string, amount: number) => {
-    const url = `${API_BASE}/tables/${tableId}/take`;
-    const res = await fetch(url, {
+    const res = await fetch(`${API_BASE}/tables/${tableId}/take`, {
       method: 'POST',
-      headers: getHeaders(),
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ playerId, amount }),
     });
     if (!res.ok) {
@@ -255,10 +192,9 @@ export const gameApi = {
   },
 
   resetPot: async (tableId: string, playerId: string) => {
-    const url = `${API_BASE}/tables/${tableId}/reset-pot`;
-    const res = await fetch(url, {
+    const res = await fetch(`${API_BASE}/tables/${tableId}/reset-pot`, {
       method: 'POST',
-      headers: getHeaders(),
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ playerId }),
     });
     if (!res.ok) {
@@ -269,10 +205,9 @@ export const gameApi = {
   },
 
   editPlayerChips: async (tableId: string, targetPlayerId: string, amount: number, adminPlayerId: string) => {
-    const url = `${API_BASE}/tables/${tableId}/admin/player/${targetPlayerId}/chips`;
-    const res = await fetch(url, {
+    const res = await fetch(`${API_BASE}/tables/${tableId}/admin/player/${targetPlayerId}/chips`, {
       method: 'PATCH',
-      headers: getHeaders(),
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ amount, adminPlayerId }),
     });
     if (!res.ok) {
@@ -283,10 +218,7 @@ export const gameApi = {
   },
 
   getActivities: async (tableId: string, limit: number = 50): Promise<Activity[]> => {
-    const url = `${API_BASE}/tables/${tableId}/activities?limit=${limit}`;
-    const res = await fetch(url, {
-      headers: getHeaders(false),
-    });
+    const res = await fetch(`${API_BASE}/tables/${tableId}/activities?limit=${limit}`);
     if (!res.ok) throw new Error('Failed to fetch activities');
     return res.json();
   },
