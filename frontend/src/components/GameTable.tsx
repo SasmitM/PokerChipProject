@@ -88,7 +88,8 @@ export default function GameTable({ gameState, onLeave, onError }: GameTableProp
     const sendHeartbeat = async () => {
       try {
         await playerApi.heartbeat(gameState.sessionId);
-      } catch (err) {
+      } catch (err: any) {
+        // Heartbeat failures are non-critical, just log
         console.error('Heartbeat failed:', err);
       }
     };
@@ -107,19 +108,43 @@ export default function GameTable({ gameState, onLeave, onError }: GameTableProp
     setIsAdmin(table.created_by === player.id);
   }, [table.created_by, player.id]);
 
-  // Initial data load
+  // Initial data load - fetch fresh data from Supabase in correct order
   useEffect(() => {
-    refreshPlayers();
-    refreshActivities();
-    refreshTable();
-  }, []);
+    const loadFreshData = async () => {
+      try {
+        // Load table data first
+        const tableData = await tableApi.getById(table.id);
+        setTable(tableData);
+        
+        // Then load players list
+        const playerList = await playerApi.getByTable(table.id);
+        setPlayers(playerList);
+        
+        // Find and update current player from fresh players list
+        const currentPlayerData = playerList.find(p => p.id === player.id);
+        if (currentPlayerData) {
+          setPlayer(currentPlayerData);
+        } else {
+          onError('Player not found in table. You may need to rejoin.');
+        }
+        
+        // Finally load activities
+        const activityList = await gameApi.getActivities(table.id, 50);
+        setActivities(activityList);
+      } catch (err: any) {
+        onError(err.message || 'Failed to load game data. Please refresh the page.');
+      }
+    };
+    
+    loadFreshData();
+  }, [table.id, player.id]);
 
   const refreshTable = async () => {
     try {
       const tableData = await tableApi.getById(table.id);
       setTable(tableData);
-    } catch (err) {
-      console.error('Failed to refresh table:', err);
+    } catch (err: any) {
+      onError(err.message || 'Failed to refresh table data');
     }
   };
 
@@ -127,8 +152,14 @@ export default function GameTable({ gameState, onLeave, onError }: GameTableProp
     try {
       const playerList = await playerApi.getByTable(table.id);
       setPlayers(playerList);
-    } catch (err) {
-      console.error('Failed to refresh players:', err);
+      
+      // Update current player state from fresh players list
+      const currentPlayerData = playerList.find(p => p.id === player.id);
+      if (currentPlayerData) {
+        setPlayer(currentPlayerData);
+      }
+    } catch (err: any) {
+      onError(err.message || 'Failed to refresh players list');
     }
   };
 
@@ -136,8 +167,8 @@ export default function GameTable({ gameState, onLeave, onError }: GameTableProp
     try {
       const activityList = await gameApi.getActivities(table.id, 50);
       setActivities(activityList);
-    } catch (err) {
-      console.error('Failed to refresh activities:', err);
+    } catch (err: any) {
+      onError(err.message || 'Failed to refresh activity feed');
     }
   };
 
