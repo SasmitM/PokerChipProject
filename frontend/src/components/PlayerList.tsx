@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Player } from '../services/api';
+import { useButtonCooldown } from '../hooks/useButtonCooldown';
 
 interface PlayerListProps {
   players: Player[];
@@ -13,21 +14,29 @@ interface PlayerListProps {
 export default function PlayerList({ players, currentPlayerId, isAdmin, onEditChips }: PlayerListProps) {
   const [editingPlayer, setEditingPlayer] = useState<string | null>(null);
   const [editAmount, setEditAmount] = useState('');
+  const { isCooldown: isEditCooldown, handleClick: handleEditClick } = useButtonCooldown(2000);
+  const { isCooldown: isSaveCooldown, handleClick: handleSaveClick } = useButtonCooldown(2000);
 
   const handleEdit = (player: Player) => {
-    setEditingPlayer(player.id);
-    setEditAmount(player.money_count.toString());
+    if (isEditCooldown) return;
+    handleEditClick(() => {
+      setEditingPlayer(player.id);
+      setEditAmount(player.money_count.toString());
+    });
   };
 
   const handleSave = async (playerId: string) => {
+    if (isSaveCooldown) return;
     const amount = Number(editAmount);
     if (amount < 0 || !Number.isInteger(amount)) {
       alert('Please enter a valid amount');
       return;
     }
-    await onEditChips(playerId, amount);
-    setEditingPlayer(null);
-    setEditAmount('');
+    await handleSaveClick(async () => {
+      await onEditChips(playerId, amount);
+      setEditingPlayer(null);
+      setEditAmount('');
+    });
   };
 
   const activePlayers = players.filter(p => p.is_active);
@@ -78,14 +87,16 @@ export default function PlayerList({ players, currentPlayerId, isAdmin, onEditCh
                   {editingPlayer === player.id ? (
                     <button
                       onClick={() => handleSave(player.id)}
-                      className="text-xs px-2 py-1 bg-poker-green text-white rounded hover:bg-green-800"
+                      disabled={isSaveCooldown}
+                      className="text-xs px-2 py-1 bg-poker-green text-white rounded hover:bg-green-800 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      Save
+                      {isSaveCooldown ? '...' : 'Save'}
                     </button>
                   ) : (
                     <button
                       onClick={() => handleEdit(player)}
-                      className="text-xs px-2 py-1 bg-gray-600 text-white rounded hover:bg-gray-700"
+                      disabled={isEditCooldown}
+                      className="text-xs px-2 py-1 bg-gray-600 text-white rounded hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       Edit
                     </button>

@@ -13,11 +13,12 @@ import {
   emitPotReset, 
   emitChipsUpdated 
 } from '../services/socketService.js';
+import { bettingLimiter, adminLimiter } from '../middleware/rateLimiter.js';
 
 const router = Router();
 
 // Place bet
-router.post('/tables/:tableId/bet', async (req, res) => {
+router.post('/tables/:tableId/bet', bettingLimiter, async (req, res) => {
   try {
     const { tableId } = req.params;
     const { playerId, amount } = req.body;
@@ -69,7 +70,7 @@ router.post('/tables/:tableId/bet', async (req, res) => {
 });
 
 // Take from pot
-router.post('/tables/:tableId/take', async (req, res) => {
+router.post('/tables/:tableId/take', bettingLimiter, async (req, res) => {
   try {
     const { tableId } = req.params;
     const { playerId, amount } = req.body;
@@ -117,7 +118,7 @@ router.post('/tables/:tableId/take', async (req, res) => {
 });
 
 // Reset pot (creator only)
-router.post('/tables/:tableId/reset-pot', async (req, res) => {
+router.post('/tables/:tableId/reset-pot', adminLimiter, async (req, res) => {
   try {
     const { tableId } = req.params;
     const { playerId } = req.body;
@@ -160,7 +161,7 @@ router.post('/tables/:tableId/reset-pot', async (req, res) => {
 });
 
 // Admin: Edit player chips (creator only)
-router.patch('/tables/:tableId/admin/player/:targetPlayerId/chips', async (req, res) => {
+router.patch('/tables/:tableId/admin/player/:targetPlayerId/chips', adminLimiter, async (req, res) => {
   try {
     const { tableId, targetPlayerId } = req.params;
     const { amount, adminPlayerId } = req.body;

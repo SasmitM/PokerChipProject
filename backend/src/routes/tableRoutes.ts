@@ -2,11 +2,12 @@ import express from "express";
 import { createTable, getTableById, updateTableCreator } from "../services/tableService.js";
 import { addPlayer } from "../services/playerService.js";
 import { logActivity } from "../services/activityService.js";
+import { tableCreationLimiter } from "../middleware/rateLimiter.js";
 
 const router = express.Router();
 
 // Create table and join as first player
-router.post("/", async (req, res) => {
+router.post("/", tableCreationLimiter, async (req, res) => {
   try {
     const { tableName, playerName, initialChips = 1000 } = req.body;
 

@@ -9,6 +9,7 @@ import {
   getPlayerById
 } from '../services/playerService.js';
 import { logActivity } from '../services/activityService.js';
+import { heartbeatLimiter } from '../middleware/rateLimiter.js';
 
 const router = Router();
 
@@ -118,7 +119,7 @@ router.patch('/players/:playerId/chips', async (req, res) => {
 });
 
 // Heartbeat
-router.post('/sessions/:sessionId/heartbeat', async (req, res) => {
+router.post('/sessions/:sessionId/heartbeat', heartbeatLimiter, async (req, res) => {
   try {
     const { sessionId } = req.params;
     await touchSession(sessionId);

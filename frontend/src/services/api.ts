@@ -1,6 +1,12 @@
 // Use environment variable for API base URL, fallback to proxy for dev
 const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api';
 
+// Debug logging (remove in production if desired)
+if (import.meta.env.PROD) {
+  console.log('API Base URL:', API_BASE);
+  console.log('VITE_API_BASE_URL env var:', import.meta.env.VITE_API_BASE_URL || 'NOT SET');
+}
+
 export interface Table {
   id: string;
   name: string;

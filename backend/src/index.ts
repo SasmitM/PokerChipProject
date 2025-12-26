@@ -7,6 +7,7 @@ import {initializeSocket} from "./sockets/socketHandlers.js"
 import tableRoutes from "./routes/tableRoutes.js";
 import playerRoutes from "./routes/playerRoutes.js";
 import gameRoutes from "./routes/gameRoutes.js";
+import { generalLimiter } from "./middleware/rateLimiter.js";
 
 dotenv.config();
 
@@ -33,10 +34,13 @@ app.use((req, res, next) => {
   next();
 });
 
-// Health check
+// Health check (no rate limiting)
 app.get("/health", (req, res) => {
   res.json({ status: "healthy", timestamp: new Date().toISOString() });
 });
+
+// Apply general rate limiter to all API routes
+app.use("/api", generalLimiter);
 
 // Routes
 app.use("/api", playerRoutes);

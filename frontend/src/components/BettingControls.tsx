@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useButtonCooldown } from '../hooks/useButtonCooldown';
 
 interface BettingControlsProps {
   playerChips: number;
@@ -9,24 +10,29 @@ interface BettingControlsProps {
 export default function BettingControls({ playerChips, onBet, onTake }: BettingControlsProps) {
   const [amount, setAmount] = useState('');
   const [action, setAction] = useState<'bet' | 'take'>('bet');
+  const { isCooldown, handleClick } = useButtonCooldown(2000);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (isCooldown) return;
+    
     const numAmount = Number(amount);
     if (numAmount <= 0 || !Number.isInteger(numAmount)) {
       return;
     }
 
-    if (action === 'bet') {
-      if (numAmount > playerChips) {
-        alert('Insufficient chips!');
-        return;
+    handleClick(async () => {
+      if (action === 'bet') {
+        if (numAmount > playerChips) {
+          alert('Insufficient chips!');
+          return;
+        }
+        onBet(numAmount);
+      } else {
+        onTake(numAmount);
       }
-      onBet(numAmount);
-    } else {
-      onTake(numAmount);
-    }
-    setAmount('');
+      setAmount('');
+    });
   };
 
   const quickAmounts = [10, 25, 50, 100, 250, 500];
@@ -95,13 +101,14 @@ export default function BettingControls({ playerChips, onBet, onTake }: BettingC
 
         <button
           type="submit"
+          disabled={isCooldown}
           className={`w-full py-3 rounded-lg font-semibold text-white transition-colors ${
             action === 'bet'
               ? 'bg-poker-green hover:bg-green-800'
               : 'bg-blue-600 hover:bg-blue-700'
-          }`}
+          } disabled:opacity-50 disabled:cursor-not-allowed`}
         >
-          {action === 'bet' ? 'Place Bet' : 'Take from Pot'}
+          {isCooldown ? 'Please wait...' : (action === 'bet' ? 'Place Bet' : 'Take from Pot')}
         </button>
       </form>
 

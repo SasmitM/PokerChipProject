@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { tableApi, playerApi, GameState } from '../services/api';
+import { useButtonCooldown } from '../hooks/useButtonCooldown';
 
 interface LandingPageProps {
   onGameStart: (state: GameState) => void;
@@ -9,6 +10,7 @@ interface LandingPageProps {
 export default function LandingPage({ onGameStart, onError }: LandingPageProps) {
   const [mode, setMode] = useState<'create' | 'join' | 'rejoin'>('create');
   const [loading, setLoading] = useState(false);
+  const { isCooldown, handleClick } = useButtonCooldown(2000);
 
   // Create table form
   const [tableName, setTableName] = useState('');
@@ -25,70 +27,79 @@ export default function LandingPage({ onGameStart, onError }: LandingPageProps) 
 
   const handleCreateTable = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isCooldown || loading) return;
     if (!tableName.trim() || !playerName.trim()) {
       onError('Please fill in all required fields');
       return;
     }
 
-    setLoading(true);
-    try {
-      const result = await tableApi.create(tableName, playerName, initialChips);
-      onGameStart({
-        table: result.table,
-        player: result.player,
-        sessionId: result.sessionId,
-      });
-    } catch (err: any) {
-      onError(err.message || 'Failed to create table');
-    } finally {
-      setLoading(false);
-    }
+    await handleClick(async () => {
+      setLoading(true);
+      try {
+        const result = await tableApi.create(tableName, playerName, initialChips);
+        onGameStart({
+          table: result.table,
+          player: result.player,
+          sessionId: result.sessionId,
+        });
+      } catch (err: any) {
+        onError(err.message || 'Failed to create table');
+      } finally {
+        setLoading(false);
+      }
+    });
   };
 
   const handleJoinTable = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isCooldown || loading) return;
     if (!tableId.trim() || !joinPlayerName.trim()) {
       onError('Please fill in all required fields');
       return;
     }
 
-    setLoading(true);
-    try {
-      const result = await playerApi.join(tableId, joinPlayerName, joinInitialChips);
-      const table = await tableApi.getById(tableId);
-      onGameStart({
-        table,
-        player: result.player,
-        sessionId: result.sessionId,
-      });
-    } catch (err: any) {
-      onError(err.message || 'Failed to join table');
-    } finally {
-      setLoading(false);
-    }
+    await handleClick(async () => {
+      setLoading(true);
+      try {
+        const result = await playerApi.join(tableId, joinPlayerName, joinInitialChips);
+        const table = await tableApi.getById(tableId);
+        onGameStart({
+          table,
+          player: result.player,
+          sessionId: result.sessionId,
+        });
+      } catch (err: any) {
+        onError(err.message || 'Failed to join table');
+      } finally {
+        setLoading(false);
+      }
+    });
   };
 
   const handleRejoin = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isCooldown || loading) return;
     if (!sessionId.trim()) {
       onError('Please enter a session ID');
       return;
     }
 
-    setLoading(true);
-    try {
-      const result = await playerApi.rejoin(sessionId);
-      const table = await tableApi.getById(result.tableId);
-      onGameStart({
-        table,
-        player: result.player,
-        sessionId: result.sessionId,
-      });
-    } catch (err: any) {
-      onError(err.message || 'Session not found. Make sure you entered the correct session ID.');
-    } finally {
-      setLoading(false);
-    }
+    await handleClick(async () => {
+      setLoading(true);
+      try {
+        const result = await playerApi.rejoin(sessionId);
+        const table = await tableApi.getById(result.tableId);
+        onGameStart({
+          table,
+          player: result.player,
+          sessionId: result.sessionId,
+        });
+      } catch (err: any) {
+        onError(err.message || 'Session not found. Make sure you entered the correct session ID.');
+      } finally {
+        setLoading(false);
+      }
+    });
   };
 
   return (
@@ -179,10 +190,10 @@ export default function LandingPage({ onGameStart, onError }: LandingPageProps) 
             </div>
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || isCooldown}
               className="w-full bg-poker-green text-white py-3 rounded-lg font-semibold hover:bg-green-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? 'Creating...' : 'Create & Join Table'}
+              {loading ? 'Creating...' : isCooldown ? 'Please wait...' : 'Create & Join Table'}
             </button>
           </form>
         )}
@@ -231,10 +242,10 @@ export default function LandingPage({ onGameStart, onError }: LandingPageProps) 
             </div>
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || isCooldown}
               className="w-full bg-poker-green text-white py-3 rounded-lg font-semibold hover:bg-green-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? 'Joining...' : 'Join Table'}
+              {loading ? 'Joining...' : isCooldown ? 'Please wait...' : 'Join Table'}
             </button>
           </form>
         )}
@@ -260,10 +271,10 @@ export default function LandingPage({ onGameStart, onError }: LandingPageProps) 
             </div>
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || isCooldown}
               className="w-full bg-poker-green text-white py-3 rounded-lg font-semibold hover:bg-green-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? 'Rejoining...' : 'Rejoin Game'}
+              {loading ? 'Rejoining...' : isCooldown ? 'Please wait...' : 'Rejoin Game'}
             </button>
           </form>
         )}

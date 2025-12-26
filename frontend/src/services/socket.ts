@@ -3,6 +3,12 @@ import { io, Socket } from 'socket.io-client';
 // Use environment variable for socket URL, fallback to localhost for dev
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:4000';
 
+// Debug logging (remove in production if desired)
+if (import.meta.env.PROD) {
+  console.log('Socket URL:', SOCKET_URL);
+  console.log('VITE_SOCKET_URL env var:', import.meta.env.VITE_SOCKET_URL || 'NOT SET');
+}
+
 export interface SocketEvents {
   'join-table': (data: { tableId: string; playerId: string }) => void;
   'leave-table': () => void;
