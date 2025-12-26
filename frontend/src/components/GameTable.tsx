@@ -139,15 +139,6 @@ export default function GameTable({ gameState, onLeave, onError }: GameTableProp
     loadFreshData();
   }, [table.id, player.id]);
 
-  const refreshTable = async () => {
-    try {
-      const tableData = await tableApi.getById(table.id);
-      setTable(tableData);
-    } catch (err: any) {
-      onError(err.message || 'Failed to refresh table data');
-    }
-  };
-
   const refreshPlayers = async () => {
     try {
       const playerList = await playerApi.getByTable(table.id);
