@@ -1,9 +1,8 @@
 {
   "compilerOptions": {
     "target": "ES2020",                  // Modern JS features
-    "module": "ESNext",                  // ES modules to match package.json "type": "module"
-    "moduleResolution": "node", 
-    "ignoreDeprecations": "6.0",       // Node.js module resolution
+    "module": "NodeNext",                // ES modules to match package.json "type": "module"
+    "moduleResolution": "nodenext",     // Node.js module resolution (modern ES modules)
     "rootDir": "./src",                  // Source files location
     "outDir": "./dist",                  // Compiled JS output
     "strict": true,                      // Enable all strict type checks
