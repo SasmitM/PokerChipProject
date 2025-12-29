@@ -1,4 +1,4 @@
-# Poker Chip Tracker 🎰
+# Poker Chip Tracker 
 
 A real-time multiplayer poker chip tracking application that remembers players even when they disconnect. Perfect for casual poker games with friends where someone's phone might die or they accidentally close their browser.
 
