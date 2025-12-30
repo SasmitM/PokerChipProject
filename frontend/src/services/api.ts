@@ -1,12 +1,6 @@
 // Use environment variable for API base URL, fallback to proxy for dev
 const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api';
 
-// Debug logging (remove in production if desired)
-if (import.meta.env.PROD) {
-  console.log('API Base URL:', API_BASE);
-  console.log('VITE_API_BASE_URL env var:', import.meta.env.VITE_API_BASE_URL || 'NOT SET');
-}
-
 export interface Table {
   id: string;
   name: string;
@@ -59,15 +53,11 @@ export interface GameState {
   sessionId: string;
 }
 
-// Helper to get headers with ngrok bypass if needed
+// Helper to get headers
 function getHeaders(includeContentType: boolean = true): HeadersInit {
   const headers: HeadersInit = {};
   if (includeContentType) {
     (headers as any)['Content-Type'] = 'application/json';
-  }
-  // Add ngrok bypass header for free tier domains
-  if (API_BASE.includes('ngrok-free.dev') || API_BASE.includes('ngrok-free.app')) {
-    (headers as any)['ngrok-skip-browser-warning'] = 'any';
   }
   return headers;
 }
@@ -78,11 +68,9 @@ async function parseJsonResponse<T>(res: Response, url: string): Promise<T> {
   
   // Check if response is actually JSON
   if (!contentType || !contentType.includes('application/json')) {
-    // If it's HTML, it's likely ngrok warning page
     if (contentType && contentType.includes('text/html')) {
       throw new Error(
-        `Received HTML instead of JSON from ${url}. ` +
-        `This might be ngrok's warning page. Make sure you've set the ngrok bypass header.`
+        `Received HTML instead of JSON from ${url}. The server may be returning an error page.`
       );
     }
     throw new Error(
@@ -116,7 +104,7 @@ async function parseError(res: Response, url: string): Promise<string> {
   } else {
     // If it's HTML or other non-JSON, provide a helpful error
     if (contentType && contentType.includes('text/html')) {
-      return `Received HTML response from ${url}. This might be ngrok's warning page blocking the request.`;
+      return `Received HTML response from ${url}. The server may be returning an error page.`;
     }
     if (res.status === 404) {
       return `Endpoint not found: ${url}. Make sure your API URL is correct and includes /api. (Current API Base: ${API_BASE})`;
