@@ -95,10 +95,16 @@ PORT=4000
 
 ### Frontend Setup
 
-For production, create `.env.production` in the frontend directory:
+For local development, create a `.env` file in the frontend directory (optional, defaults to `/api` proxy):
 ```env
-REACT_APP_API_URL=https://your-backend-url/api
-REACT_APP_SOCKET_URL=https://your-backend-url
+VITE_API_BASE_URL=http://localhost:4000/api
+VITE_SOCKET_URL=http://localhost:4000
+```
+
+For production deployment on Vercel, set these environment variables in your Vercel project settings:
+```env
+VITE_API_BASE_URL=https://your-render-backend-url/api
+VITE_SOCKET_URL=https://your-render-backend-url
 ```
 
 ## Running the Application
@@ -112,7 +118,7 @@ npm run dev
 2. Start the frontend (in a new terminal):
 ```bash
 cd frontend
-npm start
+npm run dev
 ```
 
 3. Access the application at `http://localhost:3000`
@@ -155,30 +161,57 @@ npm start
 ## Deployment
 
 ### Frontend (Vercel)
+
+1. Install Vercel CLI (if not already installed):
+```bash
+npm i -g vercel
+```
+
+2. Deploy from the frontend directory:
 ```bash
 cd frontend
-npm run build
 vercel --prod
 ```
 
-### Backend Options
-- **Railway**: Best for always-on WebSocket support (~$3-5/month)
-- **Render**: Free tier available but has cold starts
-- **Fly.io**: Good free tier with WebSocket support
+3. Set environment variables in Vercel dashboard:
+   - Go to your project settings → Environment Variables
+   - Add `VITE_API_BASE_URL` with your Render backend URL (e.g., `https://your-app.onrender.com/api`)
+   - Add `VITE_SOCKET_URL` with your Render backend URL (e.g., `https://your-app.onrender.com`)
 
-### Local Network Play
-For playing with friends on the same network:
+4. Redeploy after adding environment variables (Vercel will auto-deploy on git push, or manually trigger a redeploy)
+
+### Backend (Render)
+
+1. Connect your GitHub repository to Render
+2. Create a new Web Service with these settings:
+   - **Root Directory**: `backend`
+   - **Build Command**: `npm run build`
+   - **Start Command**: `npm start`
+   - **Environment Variables**:
+     - `SUPABASE_URL` - Your Supabase project URL
+     - `SUPABASE_ANON_KEY` - Your Supabase anon key
+     - `PORT` - Render will set this automatically (usually 10000)
+
+3. **Important Notes**:
+   - Render's free tier has a **50-second cold start delay** when the service is inactive (no requests for ~15 minutes)
+   - The first request after inactivity will take ~50 seconds to respond
+   - Subsequent requests will be fast until the service goes idle again
+   - For production use, consider upgrading to a paid plan for always-on service
+
+### Local Development
+
+For local development, both servers can run simultaneously:
 ```bash
-# Start both servers
-# Share your local IP: http://192.168.X.X:3000
+# Terminal 1 - Backend
+cd backend
+npm run dev
+
+# Terminal 2 - Frontend
+cd frontend
+npm run dev
 ```
 
-### Temporary Public Access
-Using ngrok for remote play:
-```bash
-ngrok http 4000  # Expose backend
-# Update frontend to use ngrok URL
-```
+Access the app at `http://localhost:3000` (frontend will proxy API requests to `http://localhost:4000`)
 
 ## Contributing
 
