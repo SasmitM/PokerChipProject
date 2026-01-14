@@ -28,7 +28,7 @@ export default function ActivityFeed({ activities }: ActivityFeedProps) {
   return (
     <div className="bg-white rounded-lg shadow-lg p-6">
       <h2 className="text-xl font-bold text-gray-800 mb-4">Activity Feed</h2>
-      <div className="space-y-2 max-h-96 overflow-y-auto">
+      <div className="space-y-2 max-h-96 overflow-y-auto"> 
         {activities.length === 0 ? (
           <p className="text-gray-500 text-sm">No activities yet</p>
         ) : (

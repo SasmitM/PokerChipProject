@@ -106,7 +106,7 @@ export default function LandingPage({ onGameStart, onError }: LandingPageProps) 
     <div className="min-h-screen flex items-center justify-center p-4">
       <div className="bg-white rounded-lg shadow-2xl p-8 max-w-md w-full">
         <h1 className="text-4xl font-bold text-center mb-2 text-poker-green">
-          🎰 Poker Chip Tracker
+           Poker Chip Tracker
         </h1>
         <p className="text-center text-gray-600 mb-8">
           Track your poker game chips and bets
