@@ -1,10 +1,22 @@
 import { useState } from 'react';
 import { tableApi, playerApi, GameState } from '../services/api';
 import { useButtonCooldown } from '../hooks/useButtonCooldown';
+import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
+import { Textarea } from "@/components/ui/textarea";
 
 interface LandingPageProps {
   onGameStart: (state: GameState) => void;
   onError: (error: string) => void;
+}
+
+function TextareaField() {
+  return (
+    <Field>
+      <FieldLabel htmlFor="textarea-message">Message</FieldLabel>
+      <FieldDescription>Enter your message below.</FieldDescription>
+      <Textarea id="textarea-message" placeholder="Type your message here." />
+    </Field>
+  );
 }
 
 export default function LandingPage({ onGameStart, onError }: LandingPageProps) {
@@ -144,6 +156,11 @@ export default function LandingPage({ onGameStart, onError }: LandingPageProps) 
           >
             Rejoin
           </button>
+        </div>
+
+        {/* Test Textarea Component */}
+        <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+          <TextareaField />
         </div>
 
         {/* Create Table Form */}
